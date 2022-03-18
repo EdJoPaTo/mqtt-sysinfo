@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 hostname = "0.3"
-rumqttc = "0.7"
+rumqttc = "0.11"
 
 [dependencies.clap]
 version = "2"
