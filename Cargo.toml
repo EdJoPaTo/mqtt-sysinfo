@@ -20,7 +20,7 @@ clap_complete = "3"
 [dependencies]
 clap = { version = "3", features = ["cargo", "env", "wrap_help"] }
 hostname = "0.3"
-rumqttc = "0.7"
+rumqttc = "0.11"
 
 # https://crates.io/crates/cargo-deb
 [package.metadata.deb]
