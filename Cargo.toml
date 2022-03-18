@@ -5,13 +5,14 @@ version = "0.1.0"
 license = "MIT"
 authors = ["EdJoPaTo <mqtt-hostname-online-rust@edjopato.de>"]
 edition = "2018"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[build-dependencies]
+clap = { version = "3", features = ["cargo", "env"] }
+clap_complete = "3"
+
 [dependencies]
+clap = { version = "3", features = ["cargo", "env", "wrap_help"] }
 hostname = "0.3"
 rumqttc = "0.7"
 
-[dependencies.clap]
-version = "2"
-features = ["wrap_help"]

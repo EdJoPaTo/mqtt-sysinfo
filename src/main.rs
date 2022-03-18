@@ -18,17 +18,20 @@ fn main() {
 
     let (mut client, mut connection) = {
         let matches = cli::build().get_matches();
-        let host = matches
-            .value_of("Host")
-            .expect("Host could not be read from command line");
+        let host = matches.value_of("broker").unwrap();
         let port = matches
-            .value_of("Port")
-            .and_then(|s| s.parse::<u16>().ok())
-            .expect("MQTT Server Port could not be read from command line");
+            .value_of("port")
+            .and_then(|s| s.parse().ok())
+            .unwrap();
 
         let client_id = format!("mqtt-hostname-online-{}", hostname);
         let mut mqttoptions = MqttOptions::new(client_id, host, port);
         mqttoptions.set_last_will(LastWill::new(&topic, "0", QoS::AtLeastOnce, RETAIN));
+
+        if let Some(password) = matches.value_of("password") {
+            let username = matches.value_of("username").unwrap();
+            mqttoptions.set_credentials(username, password);
+        }
 
         Client::new(mqttoptions, 10)
     };
