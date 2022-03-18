@@ -1,6 +1,6 @@
 [package]
 name = "mqtt-hostname-online"
-description = "Publishes the online status of the device on the MQTT topic <hostname>/connected"
+description = "Publishes the online status of the device on the MQTT topic <hostname>/status"
 version = "0.1.0"
 license = "MIT"
 repository = "https://github.com/EdJoPaTo/mqtt-hostname-online"

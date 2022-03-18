@@ -1,8 +1,7 @@
-use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rumqttc::{Client, ConnectionError, Event, LastWill, MqttOptions, QoS};
+use rumqttc::{Client, LastWill, MqttOptions, QoS};
 
 mod cli;
 
@@ -11,10 +10,13 @@ const RETAIN: bool = false;
 #[cfg(not(debug_assertions))]
 const RETAIN: bool = true;
 
+const QOS: QoS = QoS::AtLeastOnce;
+
 fn main() {
     let hostname = hostname::get().expect("Failed to read hostname");
     let hostname = hostname.to_str().expect("Failed to parse hostname to utf8");
-    let topic = format!("{}/connected", hostname);
+    let status_topic = format!("{}/status", hostname);
+    println!("Status Topic: {}", status_topic);
 
     let (mut client, mut connection) = {
         let matches = cli::build().get_matches();
@@ -26,7 +28,7 @@ fn main() {
 
         let client_id = format!("mqtt-hostname-online-{}", hostname);
         let mut mqttoptions = MqttOptions::new(client_id, host, port);
-        mqttoptions.set_last_will(LastWill::new(&topic, "0", QoS::AtLeastOnce, RETAIN));
+        mqttoptions.set_last_will(LastWill::new(&status_topic, "offline", QOS, RETAIN));
 
         if let Some(password) = matches.value_of("password") {
             let username = matches.value_of("username").unwrap();
@@ -37,22 +39,18 @@ fn main() {
     };
 
     for notification in connection.iter() {
-        if let Err(err) = handle_notification(&mut client, &topic, notification) {
-            eprintln!("MQTT error: {}", err);
-            sleep(Duration::from_secs(5));
+        match notification {
+            Ok(rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_))) => {
+                client
+                    .publish(&status_topic, QOS, RETAIN, "online")
+                    .expect("mqtt channel closed");
+                println!("connected and published");
+            }
+            Ok(_) => {}
+            Err(err) => {
+                eprintln!("MQTT error: {}", err);
+                sleep(Duration::from_secs(5));
+            }
         }
     }
-}
-
-fn handle_notification(
-    client: &mut Client,
-    topic: &str,
-    notification: Result<Event, ConnectionError>,
-) -> Result<(), Box<dyn Error>> {
-    if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = notification? {
-        client.publish(topic, QoS::AtLeastOnce, RETAIN, "2")?;
-        println!("connected and published {} 2", topic);
-    }
-
-    Ok(())
 }

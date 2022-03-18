@@ -1,5 +1,5 @@
 [Unit]
-Description=Publishes the online status of the device on the MQTT topic %H/connected
+Description=Publishes the online status of the device on the MQTT topic %H/status
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=0
