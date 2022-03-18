@@ -16,7 +16,7 @@ jobs:
           - macOS-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -68,7 +68,7 @@ jobs:
           - stable
           - nightly
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -107,7 +107,7 @@ jobs:
             triple: x86_64-pc-windows-msvc
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
