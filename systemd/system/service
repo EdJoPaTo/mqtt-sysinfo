@@ -1,0 +1,16 @@
+[Unit]
+Description=Publishes the online status of the device on the MQTT topic %H/connected
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+DynamicUser=true
+Restart=on-failure
+RestartSec=20
+Environment="MQTT_BROKER="
+ExecStart=/usr/bin/mqtt-hostname-online
+
+[Install]
+WantedBy=multi-user.target

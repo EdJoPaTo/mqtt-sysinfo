@@ -3,6 +3,7 @@ name = "mqtt-hostname-online"
 description = "Publishes the online status of the device on the MQTT topic <hostname>/connected"
 version = "0.1.0"
 license = "MIT"
+repository = "https://github.com/EdJoPaTo/mqtt-hostname-online"
 authors = ["EdJoPaTo <mqtt-hostname-online-rust@edjopato.de>"]
 edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,3 +17,31 @@ clap = { version = "3", features = ["cargo", "env", "wrap_help"] }
 hostname = "0.3"
 rumqttc = "0.7"
 
+# https://crates.io/crates/cargo-deb
+[package.metadata.deb]
+depends = ""
+maintainer-scripts = "systemd/system/"
+systemd-units = { enable = false, start = false }
+assets = [
+    ["target/release/mqtt-hostname-online", "/usr/bin/mqtt-hostname-online", "755"],
+    ["LICENSE", "/usr/share/licenses/mqtt-hostname-online/LICENSE", "644"],
+    ["README.md", "/usr/share/doc/mqtt-hostname-online/README.md", "644"],
+
+    ["target/completions/mqtt-hostname-online.bash", "/usr/share/bash-completion/completions/mqtt-hostname-online", "644"],
+    ["target/completions/mqtt-hostname-online.fish", "/usr/share/fish/completions/mqtt-hostname-online.fish", "644"],
+    ["target/completions/_mqtt-hostname-online", "/usr/share/zsh/site-functions/_mqtt-hostname-online", "644"],
+]
+
+# https://crates.io/crates/cargo-generate-rpm
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/mqtt-hostname-online", dest = "/usr/bin/mqtt-hostname-online", mode = "755" },
+    { source = "LICENSE", dest = "/usr/share/licenses/mqtt-hostname-online/LICENSE", mode = "644", doc = true },
+    { source = "README.md", dest = "/usr/share/doc/mqtt-hostname-online/README.md", mode = "644", doc = true },
+
+    { source = "systemd/system/service", dest = "/usr/lib/systemd/system/mqtt-hostname-online.service", mode = "644" },
+
+    { source = "target/completions/mqtt-hostname-online.bash", dest = "/usr/share/bash-completion/completions/mqtt-hostname-online", mode = "644" },
+    { source = "target/completions/mqtt-hostname-online.fish", dest = "/usr/share/fish/vendor_completions.d/mqtt-hostname-online.fish", mode = "644" },
+    { source = "target/completions/_mqtt-hostname-online", dest = "/usr/share/zsh/site-functions/_mqtt-hostname-online", mode = "644" },
+]
