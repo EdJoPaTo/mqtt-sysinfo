@@ -1,4 +1,4 @@
-use clap::{command, Arg, Command, ValueHint};
+use clap::{command, value_parser, Arg, Command, ValueHint};
 
 #[allow(clippy::too_many_lines)]
 #[must_use]
@@ -22,7 +22,7 @@ pub fn build() -> Command<'static> {
                 .value_hint(ValueHint::Other)
                 .value_name("INT")
                 .takes_value(true)
-                .validator(|s| s.parse::<u16>())
+                .value_parser(value_parser!(u16))
                 .default_value("1883")
                 .help("Port on which the MQTT Broker is running"),
         )

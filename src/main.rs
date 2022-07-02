@@ -23,18 +23,15 @@ fn main() {
 
     let (mut client, mut connection) = {
         let matches = cli::build().get_matches();
-        let host = matches.value_of("broker").unwrap();
-        let port = matches
-            .value_of("port")
-            .and_then(|s| s.parse().ok())
-            .unwrap();
+        let host = matches.get_one::<String>("broker").unwrap();
+        let port = *matches.get_one::<u16>("port").unwrap();
 
         let client_id = format!("mqtt-hostname-online-{}", HOSTNAME.as_str());
         let mut mqttoptions = MqttOptions::new(client_id, host, port);
         mqttoptions.set_last_will(LastWill::new(T_STATUS.as_str(), "offline", QOS, RETAIN));
 
-        if let Some(password) = matches.value_of("password") {
-            let username = matches.value_of("username").unwrap();
+        if let Some(password) = matches.get_one::<String>("password") {
+            let username = matches.get_one::<String>("username").unwrap();
             mqttoptions.set_credentials(username, password);
         }
 
