@@ -80,7 +80,7 @@ fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
         T_PROCESSORS.to_string(),
         QOS,
         RETAIN,
-        sys.processors().len().to_string(),
+        sys.cpus().len().to_string(),
     )?;
 
     let load = sys.load_average();
