@@ -1,6 +1,7 @@
 use std::thread::sleep;
 use std::time::Duration;
 
+use once_cell::sync::Lazy;
 use rumqttc::{Client, LastWill, MqttOptions, QoS};
 use sysinfo::{ComponentExt, SystemExt};
 
@@ -13,10 +14,14 @@ const RETAIN: bool = true;
 
 const QOS: QoS = QoS::AtLeastOnce;
 
-lazy_static::lazy_static! {
-    static ref HOSTNAME: String = hostname::get().expect("Failed to read hostname").to_str().expect("Failed to parse hostname to utf8").to_string();
-    static ref T_STATUS: String = format!("{}/status", HOSTNAME.as_str());
-}
+static HOSTNAME: Lazy<String> = Lazy::new(|| {
+    hostname::get()
+        .expect("Failed to read hostname")
+        .to_str()
+        .expect("Failed to parse hostname to utf8")
+        .to_string()
+});
+static T_STATUS: Lazy<String> = Lazy::new(|| format!("{}/status", HOSTNAME.as_str()));
 
 fn main() {
     println!("Status Topic: {}", T_STATUS.as_str());
@@ -60,13 +65,11 @@ fn main() {
 }
 
 fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
-    lazy_static::lazy_static! {
-        static ref T_OS_VERSION: String = format!("{}/os-version", HOSTNAME.as_str());
-        static ref T_PROCESSORS: String = format!("{}/processors", HOSTNAME.as_str());
-        static ref T_LOAD_1: String = format!("{}/load/one", HOSTNAME.as_str());
-        static ref T_LOAD_5: String = format!("{}/load/five", HOSTNAME.as_str());
-        static ref T_LOAD_15: String = format!("{}/load/fifteen", HOSTNAME.as_str());
-    }
+    static T_OS_VERSION: Lazy<String> = Lazy::new(|| format!("{}/os-version", HOSTNAME.as_str()));
+    static T_PROCESSORS: Lazy<String> = Lazy::new(|| format!("{}/processors", HOSTNAME.as_str()));
+    static T_LOAD_1: Lazy<String> = Lazy::new(|| format!("{}/load/one", HOSTNAME.as_str()));
+    static T_LOAD_5: Lazy<String> = Lazy::new(|| format!("{}/load/five", HOSTNAME.as_str()));
+    static T_LOAD_15: Lazy<String> = Lazy::new(|| format!("{}/load/fifteen", HOSTNAME.as_str()));
 
     let sys = sysinfo::System::new_all();
     if let Some(version) = sys.long_os_version() {

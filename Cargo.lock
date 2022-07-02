@@ -324,7 +324,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "hostname",
- "lazy_static",
+ "once_cell",
  "rumqttc",
  "sysinfo",
 ]
