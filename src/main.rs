@@ -93,11 +93,7 @@ fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
             .label()
             .trim()
             .replace(|c: char| !c.is_ascii_alphanumeric(), "-");
-        let topic = format!(
-            "{}/component-temperature/{}",
-            HOSTNAME.as_str(),
-            label
-        );
+        let topic = format!("{}/component-temperature/{}", HOSTNAME.as_str(), label);
         let temp = comp.temperature();
         client.publish(topic, QOS, false, temp.to_string())?;
     }
