@@ -40,7 +40,7 @@ fn main() {
             mqttoptions.set_credentials(username, password);
         }
 
-        Client::new(mqttoptions, 10)
+        Client::new(mqttoptions, 25)
     };
 
     for notification in connection.iter() {
