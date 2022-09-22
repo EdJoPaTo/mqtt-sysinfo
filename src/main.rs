@@ -25,10 +25,11 @@ static HOSTNAME: Lazy<String> = Lazy::new(|| {
 static T_STATUS: Lazy<String> = Lazy::new(|| format!("{}/status", HOSTNAME.as_str()));
 
 fn main() {
-    println!("Status Topic: {}", T_STATUS.as_str());
-
     let (mut client, mut connection) = {
         let matches = cli::Cli::parse();
+
+        eprintln!("Broker: {}:{}", matches.broker, matches.port);
+        eprintln!("Status Topic: {}", T_STATUS.as_str());
 
         let client_id = format!("mqtt-hostname-online-{}", HOSTNAME.as_str());
         let mut mqttoptions = MqttOptions::new(client_id, matches.broker, matches.port);
