@@ -1,6 +1,7 @@
 use std::thread::sleep;
 use std::time::Duration;
 
+use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{Client, LastWill, MqttOptions, QoS};
 use sysinfo::{ComponentExt, SystemExt};
@@ -27,16 +28,14 @@ fn main() {
     println!("Status Topic: {}", T_STATUS.as_str());
 
     let (mut client, mut connection) = {
-        let matches = cli::build().get_matches();
-        let host = matches.get_one::<String>("broker").unwrap();
-        let port = *matches.get_one::<u16>("port").unwrap();
+        let matches = cli::Cli::parse();
 
         let client_id = format!("mqtt-hostname-online-{}", HOSTNAME.as_str());
-        let mut mqttoptions = MqttOptions::new(client_id, host, port);
+        let mut mqttoptions = MqttOptions::new(client_id, matches.broker, matches.port);
         mqttoptions.set_last_will(LastWill::new(T_STATUS.as_str(), "offline", QOS, RETAIN));
 
-        if let Some(password) = matches.get_one::<String>("password") {
-            let username = matches.get_one::<String>("username").unwrap();
+        if let Some(password) = matches.password {
+            let username = matches.username.unwrap();
             mqttoptions.set_credentials(username, password);
         }
 
