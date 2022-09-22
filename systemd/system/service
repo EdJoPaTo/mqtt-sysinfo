@@ -9,7 +9,7 @@ Type=simple
 DynamicUser=true
 Restart=on-failure
 RestartSec=20
-Environment="MQTT_BROKER="
+#Environment="MQTT_BROKER="
 ExecStart=/usr/bin/mqtt-hostname-online
 
 [Install]
