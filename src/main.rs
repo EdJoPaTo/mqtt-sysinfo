@@ -1,12 +1,13 @@
-use std::thread::sleep;
 use std::time::Duration;
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-use rumqttc::{Client, LastWill, MqttOptions, QoS};
-use sysinfo::{ComponentExt, SystemExt};
+use rumqttc::{AsyncClient, QoS};
+use sysinfo::{ComponentExt, System, SystemExt};
+use tokio::time::sleep;
 
 mod cli;
+mod mqtt;
 
 #[cfg(debug_assertions)]
 const RETAIN: bool = false;
@@ -22,72 +23,78 @@ static HOSTNAME: Lazy<String> = Lazy::new(|| {
         .expect("Failed to parse hostname to utf8")
         .to_string()
 });
-static T_STATUS: Lazy<String> = Lazy::new(|| format!("{}/status", HOSTNAME.as_str()));
 
-fn main() {
-    let (mut client, mut connection) = {
-        let matches = cli::Cli::parse();
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    let matches = cli::Cli::parse();
 
-        eprintln!("Broker: {}:{}", matches.broker, matches.port);
-        eprintln!("Status Topic: {}", T_STATUS.as_str());
+    eprintln!("Broker: {}:{}", matches.broker, matches.port);
+    eprintln!("Hostname: {}", HOSTNAME.as_str());
 
-        let client_id = format!("mqtt-hostname-online-{}", HOSTNAME.as_str());
-        let mut mqttoptions = MqttOptions::new(client_id, matches.broker, matches.port);
-        mqttoptions.set_last_will(LastWill::new(T_STATUS.as_str(), "offline", QOS, RETAIN));
+    let mut client = mqtt::connect(
+        &matches.broker,
+        matches.port,
+        matches.username.as_deref(),
+        matches.password.as_deref(),
+        HOSTNAME.as_str(),
+    )
+    .await;
+    eprintln!("MQTT {} initialized.", matches.broker);
 
-        if let Some(password) = matches.password {
-            let username = matches.username.unwrap();
-            mqttoptions.set_credentials(username, password);
-        }
+    let mut sys = System::new_all();
 
-        Client::new(mqttoptions, 25)
-    };
+    on_start(&mut client, &sys)
+        .await
+        .expect("publish on startup failed");
 
-    for notification in connection.iter() {
-        match notification {
-            Ok(rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_))) => {
-                client
-                    .publish(T_STATUS.as_str(), QOS, RETAIN, "online")
-                    .expect("mqtt channel closed");
-                pubsys(&mut client).expect("mqtt channel closed");
-                println!("connected and published");
-            }
-            Ok(rumqttc::Event::Incoming(rumqttc::Packet::PingResp)) => {
-                pubsys(&mut client).expect("mqtt channel closed");
-            }
-            Ok(_) => {}
-            Err(err) => {
-                eprintln!("MQTT error: {err}");
-                sleep(Duration::from_secs(5));
-            }
-        }
+    loop {
+        on_loop(&mut client, &mut sys)
+            .await
+            .expect("mqtt channel closed");
+        sleep(Duration::from_secs(60)).await;
     }
 }
 
-fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
-    static T_OS_VERSION: Lazy<String> = Lazy::new(|| format!("{}/os-version", HOSTNAME.as_str()));
-    static T_PROCESSORS: Lazy<String> = Lazy::new(|| format!("{}/processors", HOSTNAME.as_str()));
+async fn on_start(client: &mut AsyncClient, sys: &System) -> Result<(), rumqttc::ClientError> {
+    async fn p<P: ToString + Send>(
+        client: &mut AsyncClient,
+        topic_part: &str,
+        payload: P,
+    ) -> Result<(), rumqttc::ClientError> {
+        let topic = format!("{}/{topic_part}", HOSTNAME.as_str());
+        let payload = payload.to_string();
+        client.publish(topic, QOS, RETAIN, payload.trim()).await
+    }
+
+    if let Some(version) = sys.long_os_version() {
+        p(client, "os-version", version).await?;
+    }
+
+    p(client, "processors", sys.cpus().len()).await?;
+
+    Ok(())
+}
+
+async fn on_loop(client: &mut AsyncClient, sys: &mut System) -> Result<(), rumqttc::ClientError> {
+    async fn p<P: ToString + Send>(
+        client: &mut AsyncClient,
+        topic: String,
+        payload: P,
+    ) -> Result<(), rumqttc::ClientError> {
+        let payload = payload.to_string();
+        client.publish(topic, QOS, false, payload).await
+    }
+
     static T_LOAD_1: Lazy<String> = Lazy::new(|| format!("{}/load/one", HOSTNAME.as_str()));
     static T_LOAD_5: Lazy<String> = Lazy::new(|| format!("{}/load/five", HOSTNAME.as_str()));
     static T_LOAD_15: Lazy<String> = Lazy::new(|| format!("{}/load/fifteen", HOSTNAME.as_str()));
 
-    let sys = sysinfo::System::new_all();
-    if let Some(version) = sys.long_os_version() {
-        client.publish(T_OS_VERSION.to_string(), QOS, RETAIN, version.trim())?;
-    }
-
-    client.publish(
-        T_PROCESSORS.to_string(),
-        QOS,
-        RETAIN,
-        sys.cpus().len().to_string(),
-    )?;
-
     let load = sys.load_average();
-    client.publish(T_LOAD_1.to_string(), QOS, false, load.one.to_string())?;
-    client.publish(T_LOAD_5.to_string(), QOS, false, load.five.to_string())?;
-    client.publish(T_LOAD_15.to_string(), QOS, false, load.fifteen.to_string())?;
+    p(client, T_LOAD_1.to_string(), load.one).await?;
+    p(client, T_LOAD_5.to_string(), load.five).await?;
+    p(client, T_LOAD_15.to_string(), load.fifteen).await?;
 
+    sys.refresh_components_list();
     for comp in sys.components() {
         let label = comp
             .label()
@@ -95,7 +102,7 @@ fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
             .replace(|c: char| !c.is_ascii_alphanumeric(), "-");
         let topic = format!("{}/component-temperature/{label}", HOSTNAME.as_str());
         let temp = comp.temperature();
-        client.publish(topic, QOS, false, temp.to_string())?;
+        p(client, topic, temp).await?;
     }
 
     Ok(())

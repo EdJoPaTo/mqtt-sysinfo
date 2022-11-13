@@ -447,6 +447,7 @@ dependencies = [
  "once_cell",
  "rumqttc",
  "sysinfo",
+ "tokio",
 ]
 
 [[package]]
