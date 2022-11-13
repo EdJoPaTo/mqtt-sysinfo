@@ -29,7 +29,7 @@ pub async fn connect(
     loop {
         let event = eventloop.poll().await.expect("MQTT connection error");
         if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(p)) = event {
-            println!("MQTT connected {:?}", p);
+            println!("MQTT connected {p:?}");
             client
                 .publish(&t_status, QOS, RETAIN, "online")
                 .await
@@ -44,7 +44,7 @@ pub async fn connect(
             let event = eventloop.poll().await;
             match event {
                 Ok(rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(p))) => {
-                    println!("MQTT connected {:?}", p);
+                    println!("MQTT connected {p:?}");
                     client
                         .publish(&t_status, QOS, RETAIN, "online")
                         .await
@@ -56,7 +56,7 @@ pub async fn connect(
                 }
                 Ok(_) => {}
                 Err(err) => {
-                    println!("MQTT Connection Error: {}", err);
+                    println!("MQTT Connection Error: {err}");
                     sleep(Duration::from_secs(1)).await;
                 }
             }
