@@ -57,7 +57,7 @@ fn main() {
             }
             Ok(_) => {}
             Err(err) => {
-                eprintln!("MQTT error: {}", err);
+                eprintln!("MQTT error: {err}");
                 sleep(Duration::from_secs(5));
             }
         }
@@ -93,7 +93,7 @@ fn pubsys(client: &mut Client) -> Result<(), rumqttc::ClientError> {
             .label()
             .trim()
             .replace(|c: char| !c.is_ascii_alphanumeric(), "-");
-        let topic = format!("{}/component-temperature/{}", HOSTNAME.as_str(), label);
+        let topic = format!("{}/component-temperature/{label}", HOSTNAME.as_str());
         let temp = comp.temperature();
         client.publish(topic, QOS, false, temp.to_string())?;
     }
