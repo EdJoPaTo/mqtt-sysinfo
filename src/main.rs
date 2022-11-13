@@ -66,8 +66,14 @@ async fn on_start(client: &mut AsyncClient, sys: &System) -> Result<(), rumqttc:
         client.publish(topic, QOS, RETAIN, payload.trim()).await
     }
 
+    p(client, "distribution", sys.distribution_id()).await?;
+
     if let Some(version) = sys.long_os_version() {
         p(client, "os-version", version).await?;
+    }
+
+    if let Some(kernel) = sys.kernel_version() {
+        p(client, "kernel", kernel).await?;
     }
 
     p(client, "processors", sys.cpus().len()).await?;
