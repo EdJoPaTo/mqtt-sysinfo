@@ -14,11 +14,11 @@ codegen-units = 1
 lto = true
 
 [build-dependencies]
-clap = { version = "3", features = ["deprecated", "derive", "env"] }
-clap_complete = "3"
+clap = { version = "4", features = ["deprecated", "derive", "env"] }
+clap_complete = "4"
 
 [dependencies]
-clap = { version = "3", features = ["deprecated", "derive", "env", "wrap_help"] }
+clap = { version = "4", features = ["deprecated", "derive", "env", "wrap_help"] }
 hostname = "0.3"
 once_cell = "1"
 rumqttc = "0.17"

@@ -1,10 +1,10 @@
 use clap::{Parser, ValueHint};
 
 #[derive(Debug, Parser)]
-#[clap(about, author, version)]
+#[command(about, version)]
 pub struct Cli {
     /// Host on which the MQTT Broker is running
-    #[clap(
+    #[arg(
         long,
         short,
         env = "MQTT_BROKER",
@@ -15,7 +15,7 @@ pub struct Cli {
     pub broker: String,
 
     /// Port on which the MQTT Broker is running
-    #[clap(
+    #[arg(
         long,
         short,
         env = "MQTT_PORT",
@@ -28,7 +28,7 @@ pub struct Cli {
     /// Username to access the MQTT broker.
     ///
     /// Anonymous access when not supplied.
-    #[clap(
+    #[arg(
         long,
         short,
         env = "MQTT_USERNAME",
@@ -41,7 +41,7 @@ pub struct Cli {
     /// Password to access the MQTT broker.
     ///
     /// Passing the password via command line is insecure as the password can be read from the history!
-    #[clap(
+    #[arg(
         long,
         env = "MQTT_PASSWORD",
         value_hint = ValueHint::Other,
