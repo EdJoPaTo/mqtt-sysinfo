@@ -1,7 +1,7 @@
 [package]
 name = "mqtt-hostname-online"
 description = "Publishes the online status of the device on the MQTT topic <hostname>/status"
-version = "0.2.0"
+version = "0.3.0"
 license = "MIT"
 repository = "https://github.com/EdJoPaTo/mqtt-hostname-online"
 authors = ["EdJoPaTo <mqtt-hostname-online-rust@edjopato.de>"]
@@ -21,7 +21,7 @@ clap_complete = "4"
 clap = { version = "4", features = ["deprecated", "derive", "env", "wrap_help"] }
 hostname = "0.3"
 once_cell = "1"
-rumqttc = "0.19"
+rumqttc = "0.20"
 sysinfo = "0.27"
 tokio = { version = "1", features = ["macros"] }
 
