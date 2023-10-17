@@ -95,9 +95,12 @@ async fn on_loop(client: &AsyncClient, sys: &mut System) -> Result<(), rumqttc::
         client.publish(topic, QOS, false, payload).await
     }
 
+    static T_UPTIME: Lazy<String> = Lazy::new(|| format!("{}/uptime", HOSTNAME.as_str()));
     static T_LOAD_1: Lazy<String> = Lazy::new(|| format!("{}/load/one", HOSTNAME.as_str()));
     static T_LOAD_5: Lazy<String> = Lazy::new(|| format!("{}/load/five", HOSTNAME.as_str()));
     static T_LOAD_15: Lazy<String> = Lazy::new(|| format!("{}/load/fifteen", HOSTNAME.as_str()));
+
+    p(client, T_UPTIME.to_string(), format_uptime(sys.uptime())).await?;
 
     let load = sys.load_average();
     p(client, T_LOAD_1.to_string(), load.one).await?;
@@ -116,4 +119,29 @@ async fn on_loop(client: &AsyncClient, sys: &mut System) -> Result<(), rumqttc::
     }
 
     Ok(())
+}
+
+fn format_uptime(uptime: u64) -> String {
+    #[allow(clippy::cast_precision_loss)]
+    let seconds = uptime as f64;
+    let minutes = seconds / 60.0;
+    if minutes < 100.0 {
+        return format!("{minutes:.1} minutes");
+    }
+    let hours = minutes / 60.0;
+    if hours < 24.0 {
+        return format!("{hours:.1} hours");
+    }
+    let days = hours / 24.0;
+    format!("{days:.1} days")
+}
+
+#[test]
+fn format_days_examples() {
+    assert_eq!(format_uptime(30), "0.5 minutes");
+    assert_eq!(format_uptime(60 * 5), "5.0 minutes");
+    assert_eq!(format_uptime(60 * 90), "90.0 minutes");
+    assert_eq!(format_uptime(60 * 60 * 5), "5.0 hours");
+    assert_eq!(format_uptime(60 * 60 * 20), "20.0 hours");
+    assert_eq!(format_uptime(60 * 60 * 24 * 5), "5.0 days");
 }
