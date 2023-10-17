@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use chrono::TimeZone;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
@@ -61,6 +62,11 @@ async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::Cli
         let topic = format!("{}/{topic_part}", HOSTNAME.as_str());
         let payload = payload.to_string();
         client.publish(topic, QOS, RETAIN, payload.trim()).await
+    }
+
+    if let Ok(boot_time) = sys.boot_time().try_into() {
+        let boot_time = chrono::Local.timestamp_opt(boot_time, 0).unwrap();
+        p(client, "boot-time", boot_time.to_rfc3339()).await?;
     }
 
     p(client, "distribution", sys.distribution_id()).await?;
