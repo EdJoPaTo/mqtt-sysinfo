@@ -3,7 +3,7 @@ use std::time::Duration;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
-use sysinfo::{ComponentExt, System, SystemExt};
+use sysinfo::{ComponentExt, CpuExt, System, SystemExt};
 use tokio::time::sleep;
 
 mod cli;
@@ -76,7 +76,14 @@ async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::Cli
         p(client, "kernel", kernel).await?;
     }
 
-    p(client, "processors", sys.cpus().len()).await?;
+    if let Some(cores) = sys.physical_core_count() {
+        p(client, "cpu-cores", cores).await?;
+    }
+    p(client, "cpu-threads", sys.cpus().len()).await?;
+
+    let cpu = sys.global_cpu_info();
+    p(client, "cpu-vendor", cpu.vendor_id()).await?;
+    p(client, "cpu-brand", cpu.brand()).await?;
 
     Ok(())
 }
