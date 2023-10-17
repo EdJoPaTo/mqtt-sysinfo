@@ -27,13 +27,12 @@ pub async fn connect(
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 100);
 
     loop {
-        let event = eventloop.poll().await.expect("MQTT connection error");
-        if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(p)) = event {
-            println!("MQTT connected {p:?}");
+        let event = eventloop.poll().await.expect("MQTT connection");
+        if let rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) = event {
             client
                 .publish(&t_status, QOS, RETAIN, "online")
                 .await
-                .expect("failed to publish online status");
+                .expect("Publish online status");
             break;
         }
     }
@@ -43,20 +42,19 @@ pub async fn connect(
         loop {
             let event = eventloop.poll().await;
             match event {
-                Ok(rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(p))) => {
-                    println!("MQTT connected {p:?}");
+                Ok(rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_))) => {
                     client
                         .publish(&t_status, QOS, RETAIN, "online")
                         .await
-                        .expect("failed to publish online status");
+                        .expect("Publish online status");
                 }
                 Ok(rumqttc::Event::Outgoing(rumqttc::Outgoing::Disconnect)) => {
-                    println!("MQTT Disconnect happening...");
+                    eprintln!("MQTT Disconnect happening...");
                     break;
                 }
                 Ok(_) => {}
                 Err(err) => {
-                    println!("MQTT Connection Error: {err}");
+                    eprintln!("MQTT Connection Error: {err}");
                     sleep(Duration::from_secs(1)).await;
                 }
             }

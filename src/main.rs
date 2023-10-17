@@ -18,9 +18,9 @@ const QOS: QoS = QoS::AtLeastOnce;
 
 static HOSTNAME: Lazy<String> = Lazy::new(|| {
     hostname::get()
-        .expect("Failed to read hostname")
+        .expect("Hostname should be acquirable")
         .to_str()
-        .expect("Failed to parse hostname to utf8")
+        .expect("Hostname should be UTF-8")
         .to_string()
 });
 
@@ -28,8 +28,8 @@ static HOSTNAME: Lazy<String> = Lazy::new(|| {
 async fn main() {
     let matches = cli::Cli::parse();
 
-    eprintln!("Broker: {}:{}", matches.broker, matches.port);
     eprintln!("Hostname: {}", HOSTNAME.as_str());
+    eprintln!("MQTT Broker: {}:{}", matches.broker, matches.port);
 
     let client = mqtt::connect(
         &matches.broker,
@@ -39,18 +39,15 @@ async fn main() {
         HOSTNAME.as_str(),
     )
     .await;
-    eprintln!("MQTT {} initialized.", matches.broker);
 
     let mut sys = System::new_all();
 
-    on_start(&client, &sys)
-        .await
-        .expect("publish on startup failed");
+    on_start(&client, &sys).await.expect("Initial publish");
+
+    eprintln!("Initial MQTT publish done. Starting to publish live data now...");
 
     loop {
-        on_loop(&client, &mut sys)
-            .await
-            .expect("mqtt channel closed");
+        on_loop(&client, &mut sys).await.expect("Regular update");
         sleep(Duration::from_secs(60)).await;
     }
 }
