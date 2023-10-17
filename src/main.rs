@@ -31,7 +31,7 @@ async fn main() {
     eprintln!("Broker: {}:{}", matches.broker, matches.port);
     eprintln!("Hostname: {}", HOSTNAME.as_str());
 
-    let mut client = mqtt::connect(
+    let client = mqtt::connect(
         &matches.broker,
         matches.port,
         matches.username.as_deref(),
@@ -43,21 +43,21 @@ async fn main() {
 
     let mut sys = System::new_all();
 
-    on_start(&mut client, &sys)
+    on_start(&client, &sys)
         .await
         .expect("publish on startup failed");
 
     loop {
-        on_loop(&mut client, &mut sys)
+        on_loop(&client, &mut sys)
             .await
             .expect("mqtt channel closed");
         sleep(Duration::from_secs(60)).await;
     }
 }
 
-async fn on_start(client: &mut AsyncClient, sys: &System) -> Result<(), rumqttc::ClientError> {
+async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::ClientError> {
     async fn p<P: ToString + Send>(
-        client: &mut AsyncClient,
+        client: &AsyncClient,
         topic_part: &str,
         payload: P,
     ) -> Result<(), rumqttc::ClientError> {
@@ -81,9 +81,9 @@ async fn on_start(client: &mut AsyncClient, sys: &System) -> Result<(), rumqttc:
     Ok(())
 }
 
-async fn on_loop(client: &mut AsyncClient, sys: &mut System) -> Result<(), rumqttc::ClientError> {
+async fn on_loop(client: &AsyncClient, sys: &mut System) -> Result<(), rumqttc::ClientError> {
     async fn p<P: ToString + Send>(
-        client: &mut AsyncClient,
+        client: &AsyncClient,
         topic: String,
         payload: P,
     ) -> Result<(), rumqttc::ClientError> {
