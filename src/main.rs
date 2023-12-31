@@ -4,7 +4,7 @@ use chrono::TimeZone;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
-use sysinfo::{ComponentExt, CpuExt, System, SystemExt};
+use sysinfo::{Components, System};
 use tokio::time::sleep;
 
 mod cli;
@@ -17,13 +17,8 @@ const RETAIN: bool = true;
 
 const QOS: QoS = QoS::AtLeastOnce;
 
-static HOSTNAME: Lazy<String> = Lazy::new(|| {
-    hostname::get()
-        .expect("Hostname should be acquirable")
-        .to_str()
-        .expect("Hostname should be UTF-8")
-        .to_string()
-});
+static HOSTNAME: Lazy<String> =
+    Lazy::new(|| System::host_name().expect("Hostname should be acquirable"));
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -41,19 +36,17 @@ async fn main() {
     )
     .await;
 
-    let mut sys = System::new_all();
-
-    on_start(&client, &sys).await.expect("Initial publish");
+    on_start(&client).await.expect("Initial publish");
 
     eprintln!("Initial MQTT publish done. Starting to publish live data now...");
 
     loop {
-        on_loop(&client, &mut sys).await.expect("Regular update");
+        on_loop(&client).await.expect("Regular update");
         sleep(Duration::from_secs(60)).await;
     }
 }
 
-async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::ClientError> {
+async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic_part: &str,
@@ -64,18 +57,20 @@ async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::Cli
         client.publish(topic, QOS, RETAIN, payload.trim()).await
     }
 
-    if let Ok(boot_time) = sys.boot_time().try_into() {
+    let sys = System::new_all();
+
+    if let Ok(boot_time) = System::boot_time().try_into() {
         let boot_time = chrono::Local.timestamp_opt(boot_time, 0).unwrap();
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
     }
 
-    p(client, "distribution", sys.distribution_id()).await?;
+    p(client, "distribution", System::distribution_id()).await?;
 
-    if let Some(version) = sys.long_os_version() {
+    if let Some(version) = System::long_os_version() {
         p(client, "os-version", version).await?;
     }
 
-    if let Some(kernel) = sys.kernel_version() {
+    if let Some(kernel) = System::kernel_version() {
         p(client, "kernel", kernel).await?;
     }
 
@@ -84,14 +79,28 @@ async fn on_start(client: &AsyncClient, sys: &System) -> Result<(), rumqttc::Cli
     }
     p(client, "cpu-threads", sys.cpus().len()).await?;
 
-    let cpu = sys.global_cpu_info();
-    p(client, "cpu-vendor", cpu.vendor_id()).await?;
-    p(client, "cpu-brand", cpu.brand()).await?;
+    let mut brands = sys
+        .cpus()
+        .iter()
+        .map(sysinfo::Cpu::brand)
+        .collect::<Vec<_>>();
+    brands.sort_unstable();
+    brands.dedup();
+    p(client, "cpu-brand", brands.join("; ")).await?;
+
+    let mut vendors = sys
+        .cpus()
+        .iter()
+        .map(sysinfo::Cpu::vendor_id)
+        .collect::<Vec<_>>();
+    vendors.sort_unstable();
+    vendors.dedup();
+    p(client, "cpu-vendor", vendors.join("; ")).await?;
 
     Ok(())
 }
 
-async fn on_loop(client: &AsyncClient, sys: &mut System) -> Result<(), rumqttc::ClientError> {
+async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic: String,
@@ -106,15 +115,15 @@ async fn on_loop(client: &AsyncClient, sys: &mut System) -> Result<(), rumqttc::
     static T_LOAD_5: Lazy<String> = Lazy::new(|| format!("{}/load/five", HOSTNAME.as_str()));
     static T_LOAD_15: Lazy<String> = Lazy::new(|| format!("{}/load/fifteen", HOSTNAME.as_str()));
 
-    p(client, T_UPTIME.to_string(), format_uptime(sys.uptime())).await?;
+    let uptime = format_uptime(System::uptime());
+    p(client, T_UPTIME.to_string(), uptime).await?;
 
-    let load = sys.load_average();
+    let load = System::load_average();
     p(client, T_LOAD_1.to_string(), load.one).await?;
     p(client, T_LOAD_5.to_string(), load.five).await?;
     p(client, T_LOAD_15.to_string(), load.fifteen).await?;
 
-    sys.refresh_components_list();
-    for comp in sys.components() {
+    for comp in Components::new_with_refreshed_list().list() {
         let label = comp
             .label()
             .trim()
