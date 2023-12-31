@@ -3,6 +3,8 @@ name: Test and Build Rust
 on:
   push:
   pull_request:
+env:
+  RUSTFLAGS: --deny warnings
 
 jobs:
   rustfmt:
@@ -30,7 +32,7 @@ jobs:
           - macos-latest
           - windows-latest
         clippyargs:
-          - -D clippy::pedantic -D warnings
+          - -D clippy::pedantic
         features:
           - "" # default features
         include:
@@ -61,6 +63,9 @@ jobs:
       - name: Check docs
         run: cargo doc --verbose --locked --no-deps ${{ matrix.features }}
 
+      - name: Build
+        run: cargo build --verbose --locked --all-targets ${{ matrix.features }}
+
       - name: Run tests
         run: cargo test --verbose --locked ${{ matrix.features }}
 
@@ -85,6 +90,8 @@ jobs:
             rpm: true
           - triple: arm-unknown-linux-gnueabihf
             os: ubuntu-latest
+          - triple: riscv64gc-unknown-linux-gnu
+            os: ubuntu-latest
 
           - triple: x86_64-apple-darwin
             os: macos-latest
@@ -92,6 +99,8 @@ jobs:
             os: macos-latest
 
           - triple: x86_64-pc-windows-msvc
+            os: windows-latest
+          - triple: aarch64-pc-windows-msvc
             os: windows-latest
     steps:
       - name: Setup Rust
@@ -151,7 +160,7 @@ jobs:
         run: cargo generate-rpm --auto-req disabled --target ${{ matrix.triple }} --output ${{ env.ARTIFACT_NAME }}.rpm
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.triple }}
           path: |
