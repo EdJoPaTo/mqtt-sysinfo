@@ -4,7 +4,7 @@ use chrono::TimeZone;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
-use sysinfo::{Components, System};
+use sysinfo::{Components, CpuRefreshKind, RefreshKind, System};
 use tokio::time::sleep;
 
 mod cli;
@@ -57,8 +57,6 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         client.publish(topic, QOS, RETAIN, payload.trim()).await
     }
 
-    let sys = System::new_all();
-
     if let Ok(boot_time) = System::boot_time().try_into() {
         let boot_time = chrono::Local.timestamp_opt(boot_time, 0).unwrap();
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
@@ -74,28 +72,25 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, "kernel", kernel).await?;
     }
 
-    if let Some(cores) = sys.physical_core_count() {
-        p(client, "cpu-cores", cores).await?;
+    {
+        let sys = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::new()));
+        let cpus = sys.cpus();
+
+        if let Some(cores) = sys.physical_core_count() {
+            p(client, "cpu-cores", cores).await?;
+        }
+        p(client, "cpu-threads", cpus.len()).await?;
+
+        let mut brands = cpus.iter().map(sysinfo::Cpu::brand).collect::<Vec<_>>();
+        brands.sort_unstable();
+        brands.dedup();
+        p(client, "cpu-brand", brands.join("; ")).await?;
+
+        let mut vendors = cpus.iter().map(sysinfo::Cpu::vendor_id).collect::<Vec<_>>();
+        vendors.sort_unstable();
+        vendors.dedup();
+        p(client, "cpu-vendor", vendors.join("; ")).await?;
     }
-    p(client, "cpu-threads", sys.cpus().len()).await?;
-
-    let mut brands = sys
-        .cpus()
-        .iter()
-        .map(sysinfo::Cpu::brand)
-        .collect::<Vec<_>>();
-    brands.sort_unstable();
-    brands.dedup();
-    p(client, "cpu-brand", brands.join("; ")).await?;
-
-    let mut vendors = sys
-        .cpus()
-        .iter()
-        .map(sysinfo::Cpu::vendor_id)
-        .collect::<Vec<_>>();
-    vendors.sort_unstable();
-    vendors.dedup();
-    p(client, "cpu-vendor", vendors.join("; ")).await?;
 
     Ok(())
 }
