@@ -8,13 +8,13 @@ use crate::{QOS, RETAIN};
 
 pub async fn connect(
     broker: &str,
-    port: u16,
+    port: std::num::NonZeroU16,
     username: Option<&str>,
     password: Option<&str>,
     hostname: &str,
 ) -> AsyncClient {
     let client_id = format!("mqtt-hostname-online-{hostname}");
-    let mut mqttoptions = MqttOptions::new(client_id, broker, port);
+    let mut mqttoptions = MqttOptions::new(client_id, broker, port.get());
 
     let t_status = format!("{hostname}/status");
     mqttoptions.set_last_will(LastWill::new(&t_status, "offline", QOS, RETAIN));

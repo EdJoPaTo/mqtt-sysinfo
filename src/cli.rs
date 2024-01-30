@@ -21,9 +21,9 @@ pub struct Cli {
         env = "MQTT_PORT",
         value_hint = ValueHint::Other,
         value_name = "INT",
-        default_value_t = 1883,
+        default_value = "1883",
     )]
-    pub port: u16,
+    pub port: std::num::NonZeroU16,
 
     /// Username to access the MQTT broker.
     ///
