@@ -58,6 +58,14 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         client.publish(topic, QOS, RETAIN, payload.trim()).await
     }
 
+    {
+        let topic_part = concat!(env!("CARGO_PKG_NAME"), "/repository");
+        p(client, topic_part, env!("CARGO_PKG_REPOSITORY")).await?;
+
+        let topic_part = concat!(env!("CARGO_PKG_NAME"), "/version");
+        p(client, topic_part, env!("CARGO_PKG_VERSION")).await?;
+    }
+
     if let Ok(boot_time) = System::boot_time().try_into() {
         let boot_time = chrono::Local.timestamp_opt(boot_time, 0).unwrap();
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
