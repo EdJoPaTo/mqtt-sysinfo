@@ -47,6 +47,7 @@ async fn main() {
 }
 
 async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
+    #[allow(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic_part: &str,
@@ -96,6 +97,7 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 }
 
 async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
+    #[allow(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic: String,
@@ -122,7 +124,7 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         let label = comp
             .label()
             .trim()
-            .replace(|c: char| !c.is_ascii_alphanumeric(), "-");
+            .replace(|char: char| !char.is_ascii_alphanumeric(), "-");
         let topic = format!("{}/component-temperature/{label}", HOSTNAME.as_str());
         let temp = comp.temperature();
         p(client, topic, temp).await?;
