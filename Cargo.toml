@@ -22,6 +22,7 @@ lto = true
 [build-dependencies]
 clap = { version = "4", features = ["deprecated", "derive", "env"] }
 clap_complete = "4"
+clap_mangen = "0.2"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -44,6 +45,8 @@ assets = [
 	["target/completions/mqtt-hostname-online.bash", "/usr/share/bash-completion/completions/mqtt-hostname-online", "644"],
 	["target/completions/mqtt-hostname-online.fish", "/usr/share/fish/completions/", "644"],
 	["target/completions/_mqtt-hostname-online", "/usr/share/zsh/site-functions/", "644"],
+
+	["target/manpages/*", "/usr/share/man/man1/", "644"],
 ]
 
 # https://crates.io/crates/cargo-generate-rpm
@@ -58,4 +61,6 @@ assets = [
 	{ source = "target/completions/mqtt-hostname-online.bash", dest = "/usr/share/bash-completion/completions/mqtt-hostname-online", mode = "644" },
 	{ source = "target/completions/mqtt-hostname-online.fish", dest = "/usr/share/fish/vendor_completions.d/", mode = "644" },
 	{ source = "target/completions/_mqtt-hostname-online", dest = "/usr/share/zsh/site-functions/", mode = "644" },
+
+	{ source = "target/manpages/*", dest = "/usr/share/man/man1/", mode = "644", doc = true },
 ]
