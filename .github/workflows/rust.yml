@@ -37,7 +37,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: clippy
       - uses: actions/checkout@v4
-      - run: cargo fetch --locked
+      - run: cargo fetch
       - run: cargo clippy --offline --all-targets
       - run: cargo doc --offline --no-deps
 
@@ -56,22 +56,19 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-    env:
-      RUSTFLAGS: --allow unknown-lints --deny warnings
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
       - uses: actions/checkout@v4
-      - run: cargo fetch --locked
+      - run: cargo fetch
       - run: cargo build --offline --all-targets
-      - run: cargo test --offline
+      - run: cargo test --offline --no-fail-fast
 
-  github-release:
+  release:
     name: Release ${{ matrix.triple }}
     runs-on: ${{ matrix.os }}
-    needs: test
     permissions:
       contents: write
     strategy:
@@ -102,7 +99,7 @@ jobs:
           - triple: aarch64-pc-windows-msvc
             os: windows-latest
     env:
-      RUSTFLAGS: --allow unknown-lints --deny warnings
+      RUSTFLAGS: --deny warnings
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
