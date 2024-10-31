@@ -81,6 +81,10 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, "kernel", kernel).await?;
     }
 
+    if let Some(arch) = System::cpu_arch() {
+        p(client, "cpu-arch", arch).await?;
+    }
+
     {
         let sys = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::new()));
         let cpus = sys.cpus();
