@@ -1,12 +1,12 @@
 [package]
-name = "mqtt-hostname-online"
-description = "Publishes the online status of the device on the MQTT topic <hostname>/status"
-version = "0.5.1"
+name = "mqtt-sysinfo"
+description = "Publish system infos of the device on the MQTT topics <hostname>/#"
+version = "0.6.0"
 license = "MIT"
-repository = "https://github.com/EdJoPaTo/mqtt-hostname-online"
-authors = ["EdJoPaTo <mqtt-hostname-online-rust@edjopato.de>"]
+repository = "https://github.com/EdJoPaTo/mqtt-sysinfo"
+authors = ["EdJoPaTo <mqtt-sysinfo-rust@edjopato.de>"]
 edition = "2021"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+rust-version = "1.74"
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -38,13 +38,13 @@ depends = ""
 maintainer-scripts = "systemd/system/"
 systemd-units = { enable = false, start = false }
 assets = [
-	["target/release/mqtt-hostname-online", "/usr/bin/", "755"],
-	["LICENSE", "/usr/share/licenses/mqtt-hostname-online/", "644"],
-	["README.md", "/usr/share/doc/mqtt-hostname-online/", "644"],
+	["target/release/mqtt-sysinfo", "/usr/bin/", "755"],
+	["LICENSE", "/usr/share/licenses/mqtt-sysinfo/", "644"],
+	["README.md", "/usr/share/doc/mqtt-sysinfo/", "644"],
 
-	["target/completions/mqtt-hostname-online.bash", "/usr/share/bash-completion/completions/mqtt-hostname-online", "644"],
-	["target/completions/mqtt-hostname-online.fish", "/usr/share/fish/completions/", "644"],
-	["target/completions/_mqtt-hostname-online", "/usr/share/zsh/site-functions/", "644"],
+	["target/completions/mqtt-sysinfo.bash", "/usr/share/bash-completion/completions/mqtt-sysinfo", "644"],
+	["target/completions/mqtt-sysinfo.fish", "/usr/share/fish/completions/", "644"],
+	["target/completions/_mqtt-sysinfo", "/usr/share/zsh/site-functions/", "644"],
 
 	["target/manpages/*", "/usr/share/man/man1/", "644"],
 ]
@@ -52,15 +52,15 @@ assets = [
 # https://crates.io/crates/cargo-generate-rpm
 [package.metadata.generate-rpm]
 assets = [
-	{ source = "target/release/mqtt-hostname-online", dest = "/usr/bin/", mode = "755" },
-	{ source = "LICENSE", dest = "/usr/share/licenses/mqtt-hostname-online/", mode = "644", doc = true },
-	{ source = "README.md", dest = "/usr/share/doc/mqtt-hostname-online/", mode = "644", doc = true },
+	{ source = "target/release/mqtt-sysinfo", dest = "/usr/bin/", mode = "755" },
+	{ source = "LICENSE", dest = "/usr/share/licenses/mqtt-sysinfo/", mode = "644", doc = true },
+	{ source = "README.md", dest = "/usr/share/doc/mqtt-sysinfo/", mode = "644", doc = true },
 
-	{ source = "systemd/system/service", dest = "/usr/lib/systemd/system/mqtt-hostname-online.service", mode = "644" },
+	{ source = "systemd/system/service", dest = "/usr/lib/systemd/system/mqtt-sysinfo.service", mode = "644" },
 
-	{ source = "target/completions/mqtt-hostname-online.bash", dest = "/usr/share/bash-completion/completions/mqtt-hostname-online", mode = "644" },
-	{ source = "target/completions/mqtt-hostname-online.fish", dest = "/usr/share/fish/vendor_completions.d/", mode = "644" },
-	{ source = "target/completions/_mqtt-hostname-online", dest = "/usr/share/zsh/site-functions/", mode = "644" },
+	{ source = "target/completions/mqtt-sysinfo.bash", dest = "/usr/share/bash-completion/completions/mqtt-sysinfo", mode = "644" },
+	{ source = "target/completions/mqtt-sysinfo.fish", dest = "/usr/share/fish/vendor_completions.d/", mode = "644" },
+	{ source = "target/completions/_mqtt-sysinfo", dest = "/usr/share/zsh/site-functions/", mode = "644" },
 
 	{ source = "target/manpages/*", dest = "/usr/share/man/man1/", mode = "644", doc = true },
 ]

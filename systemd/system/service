@@ -1,5 +1,5 @@
 [Unit]
-Description=Publishes the online status of the device on the MQTT topic %H/status
+Description=Publish system infos of the device on the MQTT topics %H/#
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=0
@@ -10,7 +10,7 @@ DynamicUser=true
 Restart=on-failure
 RestartSec=20
 #Environment=MQTT_BROKER=
-ExecStart=/usr/bin/mqtt-hostname-online
+ExecStart=/usr/bin/mqtt-sysinfo
 
 [Install]
 WantedBy=multi-user.target

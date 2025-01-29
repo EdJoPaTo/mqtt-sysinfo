@@ -399,8 +399,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "mqtt-hostname-online"
-version = "0.5.1"
+name = "mqtt-sysinfo"
+version = "0.6.0"
 dependencies = [
  "chrono",
  "clap",

@@ -13,7 +13,7 @@ pub async fn connect(
     password: Option<&str>,
     hostname: &str,
 ) -> AsyncClient {
-    let client_id = format!("mqtt-hostname-online-{hostname}");
+    let client_id = format!("mqtt-sysinfo-{hostname}");
     let mut mqttoptions = MqttOptions::new(client_id, broker, port.get());
 
     let t_status = format!("{hostname}/status");

@@ -47,6 +47,7 @@ jobs:
           - stable
           - beta
           - nightly
+          - "1.74"
         os:
           - ubuntu-latest
           - macos-latest
@@ -116,7 +117,7 @@ jobs:
           echo "version: $version"
           echo "GIT_TAG_VERSION=$version" >> $GITHUB_ENV
 
-          name="mqtt-hostname-online-$version-${{ matrix.triple }}"
+          name="mqtt-sysinfo-$version-${{ matrix.triple }}"
           echo "artifact: $name"
           echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
 
@@ -132,7 +133,7 @@ jobs:
           systemd
           -C target/ completions/ -C ../
           -C target/ manpages/ -C ../
-          -C target/${{ matrix.triple }}/release/ mqtt-hostname-online
+          -C target/${{ matrix.triple }}/release/ mqtt-sysinfo
           | gzip --best > ${{ env.ARTIFACT_NAME }}.tar.gz
       - name: Package zip (Windows)
         if: runner.os == 'Windows'
@@ -141,7 +142,7 @@ jobs:
           LICENSE README.md
           ./target/completions/
           ./target/manpages/
-          ./target/${{ matrix.triple }}/release/mqtt-hostname-online.exe
+          ./target/${{ matrix.triple }}/release/mqtt-sysinfo.exe
       - name: Package deb
         if: runner.os == 'Linux'
         run: cargo deb --no-build --no-strip --target ${{ matrix.triple }} --output ${{ env.ARTIFACT_NAME }}.deb
