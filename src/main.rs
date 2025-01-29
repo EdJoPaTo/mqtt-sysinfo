@@ -81,12 +81,11 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, "kernel", kernel).await?;
     }
 
-    if let Some(arch) = System::cpu_arch() {
-        p(client, "cpu-arch", arch).await?;
-    }
+    p(client, "cpu-arch", System::cpu_arch()).await?;
 
     {
-        let sys = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::new()));
+        let sys =
+            System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
         let cpus = sys.cpus();
 
         if let Some(cores) = sys.physical_core_count() {
@@ -133,12 +132,14 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     p(client, T_LOAD_15.to_string(), load.fifteen).await?;
 
     for comp in Components::new_with_refreshed_list().list() {
+        let Some(temp) = comp.temperature().filter(|temp| temp.is_finite()) else {
+            continue;
+        };
         let label = comp
             .label()
             .trim()
             .replace(|char: char| !char.is_ascii_alphanumeric(), "-");
         let topic = format!("{}/component-temperature/{label}", HOSTNAME.as_str());
-        let temp = comp.temperature();
         p(client, topic, temp).await?;
     }
 
