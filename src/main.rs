@@ -73,6 +73,10 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 
     p(client, "distribution", System::distribution_id()).await?;
 
+    if let Some(name) = System::name() {
+        p(client, "os-name", name).await?;
+    }
+
     if let Some(version) = System::long_os_version() {
         p(client, "os-version", version).await?;
     }
