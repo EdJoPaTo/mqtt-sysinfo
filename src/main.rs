@@ -111,6 +111,13 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     Ok(())
 }
 
+macro_rules! topic {
+    ($topic:literal) => {{
+        static TOPIC: Lazy<String> = Lazy::new(|| format!($topic, hostname = HOSTNAME.as_str()));
+        TOPIC.to_string()
+    }};
+}
+
 async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     #[allow(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
@@ -122,18 +129,13 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         client.publish(topic, QOS, false, payload).await
     }
 
-    static T_UPTIME: Lazy<String> = Lazy::new(|| format!("{}/uptime", HOSTNAME.as_str()));
-    static T_LOAD_1: Lazy<String> = Lazy::new(|| format!("{}/load/one", HOSTNAME.as_str()));
-    static T_LOAD_5: Lazy<String> = Lazy::new(|| format!("{}/load/five", HOSTNAME.as_str()));
-    static T_LOAD_15: Lazy<String> = Lazy::new(|| format!("{}/load/fifteen", HOSTNAME.as_str()));
-
     let uptime = format_uptime(System::uptime());
-    p(client, T_UPTIME.to_string(), uptime).await?;
+    p(client, topic!("{hostname}/uptime"), uptime).await?;
 
     let load = System::load_average();
-    p(client, T_LOAD_1.to_string(), load.one).await?;
-    p(client, T_LOAD_5.to_string(), load.five).await?;
-    p(client, T_LOAD_15.to_string(), load.fifteen).await?;
+    p(client, topic!("{hostname}/load/one"), load.one).await?;
+    p(client, topic!("{hostname}/load/five"), load.five).await?;
+    p(client, topic!("{hostname}/load/fifteen"), load.fifteen).await?;
 
     for comp in Components::new_with_refreshed_list().list() {
         let Some(temp) = comp.temperature().filter(|temp| temp.is_finite()) else {
