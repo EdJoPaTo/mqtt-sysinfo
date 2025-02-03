@@ -149,6 +149,32 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, topic, temp).await?;
     }
 
+    // Ignore errors and override multiple batteries over the same topics
+    // Not sure how to handle multiple batteries better and simply using the first wont solve it as the order might be mixed up.
+    // Most devices have no or a single battery so thats fine with them?
+    if let Ok(batteries) = starship_battery::Manager::new().and_then(|manager| manager.batteries())
+    {
+        let batteries = batteries
+            .flatten()
+            .map(|battery| {
+                let charge = battery.state_of_charge().value;
+                let cycle_count = battery.cycle_count();
+                let health = battery.state_of_health().value;
+                let state = battery.state();
+                (charge, cycle_count, health, state)
+            })
+            .collect::<Vec<_>>();
+        for (charge, cycle_count, health, state) in batteries {
+            p(client, topic!("{hostname}/battery/charge"), charge).await?;
+            p(client, topic!("{hostname}/battery/state"), state).await?;
+            p(client, topic!("{hostname}/battery/health"), health).await?;
+            if let Some(cycle_count) = cycle_count {
+                let topic = topic!("{hostname}/battery/cycle_count");
+                p(client, topic, cycle_count).await?;
+            }
+        }
+    }
+
     Ok(())
 }
 
