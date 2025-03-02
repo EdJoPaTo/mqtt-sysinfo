@@ -10,10 +10,7 @@ use tokio::time::sleep;
 mod cli;
 mod mqtt;
 
-#[cfg(debug_assertions)]
-const RETAIN: bool = false;
-#[cfg(not(debug_assertions))]
-const RETAIN: bool = true;
+const RETAIN: bool = cfg!(not(debug_assertions));
 
 const QOS: QoS = QoS::AtLeastOnce;
 
