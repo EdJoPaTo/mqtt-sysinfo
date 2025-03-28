@@ -63,8 +63,11 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, topic_part, env!("CARGO_PKG_VERSION")).await?;
     }
 
-    if let Ok(boot_time) = System::boot_time().try_into() {
-        let boot_time = chrono::Local.timestamp_opt(boot_time, 0).unwrap();
+    let boot_time = System::boot_time()
+        .try_into()
+        .ok()
+        .and_then(|secs| chrono::Local.timestamp_opt(secs, 0).single());
+    if let Some(boot_time) = boot_time {
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
     }
 
