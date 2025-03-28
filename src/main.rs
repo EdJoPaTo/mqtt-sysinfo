@@ -84,14 +84,15 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 
     p(client, "cpu-arch", System::cpu_arch()).await?;
 
+    if let Some(cores) = System::physical_core_count() {
+        p(client, "cpu-cores", cores).await?;
+    }
+
     {
         let sys =
             System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
         let cpus = sys.cpus();
 
-        if let Some(cores) = sys.physical_core_count() {
-            p(client, "cpu-cores", cores).await?;
-        }
         p(client, "cpu-threads", cpus.len()).await?;
 
         let mut brands = cpus.iter().map(sysinfo::Cpu::brand).collect::<Vec<_>>();
