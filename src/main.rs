@@ -113,9 +113,12 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 }
 
 macro_rules! topic {
-    ($topic:literal) => {{
-        static TOPIC: Lazy<String> = Lazy::new(|| format!($topic, hostname = HOSTNAME.as_str()));
-        TOPIC.to_string()
+    ($topic_part:literal) => {{
+        const SUFFIX: &str = concat!("/", $topic_part);
+        let mut topic = String::with_capacity(HOSTNAME.len() + SUFFIX.len());
+        topic.push_str(&HOSTNAME);
+        topic.push_str(SUFFIX);
+        topic
     }};
 }
 
@@ -131,14 +134,16 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     }
 
     let uptime = format_uptime(System::uptime());
-    p(client, topic!("{hostname}/uptime"), uptime).await?;
+    p(client, topic!("uptime"), uptime).await?;
 
     let load = System::load_average();
-    p(client, topic!("{hostname}/load/one"), load.one).await?;
-    p(client, topic!("{hostname}/load/five"), load.five).await?;
-    p(client, topic!("{hostname}/load/fifteen"), load.fifteen).await?;
+    p(client, topic!("load/one"), load.one).await?;
+    p(client, topic!("load/five"), load.five).await?;
+    p(client, topic!("load/fifteen"), load.fifteen).await?;
 
     for comp in Components::new_with_refreshed_list().list() {
+        const TOPIC_PART: &str = "/component-temperature/";
+
         let Some(temp) = comp.temperature().filter(|temp| temp.is_finite()) else {
             continue;
         };
@@ -146,7 +151,10 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
             .label()
             .trim()
             .replace(|char: char| !char.is_ascii_alphanumeric(), "-");
-        let topic = format!("{}/component-temperature/{label}", HOSTNAME.as_str());
+        let mut topic = String::with_capacity(HOSTNAME.len() + TOPIC_PART.len() + label.len());
+        topic.push_str(&HOSTNAME);
+        topic.push_str(TOPIC_PART);
+        topic.push_str(&label);
         p(client, topic, temp).await?;
     }
 
@@ -166,11 +174,11 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
             })
             .collect::<Vec<_>>();
         for (charge, cycle_count, health, state) in batteries {
-            p(client, topic!("{hostname}/battery/charge"), charge).await?;
-            p(client, topic!("{hostname}/battery/state"), state).await?;
-            p(client, topic!("{hostname}/battery/health"), health).await?;
+            p(client, topic!("battery/charge"), charge).await?;
+            p(client, topic!("battery/state"), state).await?;
+            p(client, topic!("battery/health"), health).await?;
             if let Some(cycle_count) = cycle_count {
-                let topic = topic!("{hostname}/battery/cycle_count");
+                let topic = topic!("battery/cycle_count");
                 p(client, topic, cycle_count).await?;
             }
         }
