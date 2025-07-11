@@ -43,7 +43,6 @@ async fn main() {
     }
 }
 
-#[allow(clippy::cognitive_complexity)]
 async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     #[allow(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
@@ -54,6 +53,18 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         let topic = format!("{}/{topic_part}", HOSTNAME.as_str());
         let payload = payload.to_string();
         client.publish(topic, QOS, RETAIN, payload.trim()).await
+    }
+
+    /// publish optional
+    async fn po<P: ToString + Send>(
+        client: &AsyncClient,
+        topic_part: &str,
+        payload: Option<P>,
+    ) -> Result<(), rumqttc::ClientError> {
+        if let Some(payload) = payload {
+            p(client, topic_part, payload).await?;
+        }
+        Ok(())
     }
 
     {
@@ -73,24 +84,12 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     }
 
     p(client, "os/distribution", System::distribution_id()).await?;
-
-    if let Some(name) = System::name() {
-        p(client, "os/name", name).await?;
-    }
-
-    if let Some(version) = System::long_os_version() {
-        p(client, "os/version", version).await?;
-    }
-
-    if let Some(kernel) = System::kernel_version() {
-        p(client, "os/kernel", kernel).await?;
-    }
+    po(client, "os/name", System::name()).await?;
+    po(client, "os/version", System::long_os_version()).await?;
+    po(client, "os/kernel", System::kernel_version()).await?;
 
     p(client, "cpu/arch", System::cpu_arch()).await?;
-
-    if let Some(cores) = System::physical_core_count() {
-        p(client, "cpu/cores", cores).await?;
-    }
+    po(client, "cpu/cores", System::physical_core_count()).await?;
 
     {
         let sys =
@@ -111,32 +110,21 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     }
 
     if let Some(motherboard) = Motherboard::new() {
-        if let Some(name) = motherboard.name() {
-            p(client, "motherboard/name", name).await?;
-        }
-        if let Some(vendor) = motherboard.vendor_name() {
-            p(client, "motherboard/vendor", vendor).await?;
-        }
-        if let Some(version) = motherboard.version() {
-            p(client, "motherboard/version", version).await?;
-        }
+        po(client, "motherboard/name", motherboard.name()).await?;
+        po(client, "motherboard/vendor", motherboard.vendor_name()).await?;
+        po(client, "motherboard/version", motherboard.version()).await?;
     }
 
-    if let Some(name) = Product::name() {
-        p(client, "product/name", name).await?;
-    }
-    if let Some(family) = Product::family() {
-        p(client, "product/family", family).await?;
-    }
-    if let Some(sku) = Product::stock_keeping_unit() {
-        p(client, "product/stock_keeping_unit", sku).await?;
-    }
-    if let Some(vendor) = Product::vendor_name() {
-        p(client, "product/vendor", vendor).await?;
-    }
-    if let Some(version) = Product::version() {
-        p(client, "product/version", version).await?;
-    }
+    po(client, "product/name", Product::name()).await?;
+    po(client, "product/family", Product::family()).await?;
+    po(
+        client,
+        "product/stock_keeping_unit",
+        Product::stock_keeping_unit(),
+    )
+    .await?;
+    po(client, "product/vendor", Product::vendor_name()).await?;
+    po(client, "product/version", Product::version()).await?;
 
     Ok(())
 }
