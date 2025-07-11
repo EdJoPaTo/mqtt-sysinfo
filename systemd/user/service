@@ -1,0 +1,15 @@
+[Unit]
+Description=Publish system infos of the device on the MQTT topics %H/#
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+Restart=on-failure
+RestartSec=20
+#Environment=MQTT_BROKER=
+ExecStart=%h/.local/bin/mqtt-sysinfo
+
+[Install]
+WantedBy=default.target
