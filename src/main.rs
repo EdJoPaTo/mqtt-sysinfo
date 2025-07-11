@@ -4,7 +4,7 @@ use chrono::TimeZone;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
-use sysinfo::{Components, CpuRefreshKind, RefreshKind, System};
+use sysinfo::{Components, CpuRefreshKind, Motherboard, Product, RefreshKind, System};
 use tokio::time::sleep;
 
 mod cli;
@@ -43,6 +43,7 @@ async fn main() {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     #[allow(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
@@ -107,6 +108,34 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         vendors.sort_unstable();
         vendors.dedup();
         p(client, "cpu-vendor", vendors.join("; ")).await?;
+    }
+
+    if let Some(motherboard) = Motherboard::new() {
+        if let Some(name) = motherboard.name() {
+            p(client, "motherboard/name", name).await?;
+        }
+        if let Some(vendor) = motherboard.vendor_name() {
+            p(client, "motherboard/vendor", vendor).await?;
+        }
+        if let Some(version) = motherboard.version() {
+            p(client, "motherboard/version", version).await?;
+        }
+    }
+
+    if let Some(name) = Product::name() {
+        p(client, "product/name", name).await?;
+    }
+    if let Some(family) = Product::family() {
+        p(client, "product/family", family).await?;
+    }
+    if let Some(sku) = Product::stock_keeping_unit() {
+        p(client, "product/stock_keeping_unit", sku).await?;
+    }
+    if let Some(vendor) = Product::vendor_name() {
+        p(client, "product/vendor", vendor).await?;
+    }
+    if let Some(version) = Product::version() {
+        p(client, "product/version", version).await?;
     }
 
     Ok(())
