@@ -72,24 +72,24 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
     }
 
-    p(client, "distribution", System::distribution_id()).await?;
+    p(client, "os/distribution", System::distribution_id()).await?;
 
     if let Some(name) = System::name() {
-        p(client, "os-name", name).await?;
+        p(client, "os/name", name).await?;
     }
 
     if let Some(version) = System::long_os_version() {
-        p(client, "os-version", version).await?;
+        p(client, "os/version", version).await?;
     }
 
     if let Some(kernel) = System::kernel_version() {
-        p(client, "kernel", kernel).await?;
+        p(client, "os/kernel", kernel).await?;
     }
 
-    p(client, "cpu-arch", System::cpu_arch()).await?;
+    p(client, "cpu/arch", System::cpu_arch()).await?;
 
     if let Some(cores) = System::physical_core_count() {
-        p(client, "cpu-cores", cores).await?;
+        p(client, "cpu/cores", cores).await?;
     }
 
     {
@@ -97,17 +97,17 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
             System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
         let cpus = sys.cpus();
 
-        p(client, "cpu-threads", cpus.len()).await?;
+        p(client, "cpu/threads", cpus.len()).await?;
 
         let mut brands = cpus.iter().map(sysinfo::Cpu::brand).collect::<Vec<_>>();
         brands.sort_unstable();
         brands.dedup();
-        p(client, "cpu-brand", brands.join("; ")).await?;
+        p(client, "cpu/brand", brands.join("; ")).await?;
 
         let mut vendors = cpus.iter().map(sysinfo::Cpu::vendor_id).collect::<Vec<_>>();
         vendors.sort_unstable();
         vendors.dedup();
-        p(client, "cpu-vendor", vendors.join("; ")).await?;
+        p(client, "cpu/vendor", vendors.join("; ")).await?;
     }
 
     if let Some(motherboard) = Motherboard::new() {
