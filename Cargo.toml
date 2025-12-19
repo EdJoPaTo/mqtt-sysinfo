@@ -26,9 +26,9 @@ clap_mangen = "0.2"
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 clap = { version = "4", features = ["deprecated", "derive", "env", "wrap_help"] }
-rumqttc = "0.24"
+rumqttc = "0.25"
 starship-battery = "0.10"
-sysinfo = { version = "0.36", default-features = false, features = ["component", "system"] }
+sysinfo = { version = "0.37", default-features = false, features = ["component", "system"] }
 tokio = { version = "1", features = ["macros"] }
 
 # https://crates.io/crates/cargo-deb
