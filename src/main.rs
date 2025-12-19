@@ -1,8 +1,8 @@
+use std::sync::LazyLock;
 use std::time::Duration;
 
 use chrono::TimeZone;
 use clap::Parser;
-use once_cell::sync::Lazy;
 use rumqttc::{AsyncClient, QoS};
 use sysinfo::{Components, CpuRefreshKind, Motherboard, Product, RefreshKind, System};
 use tokio::time::sleep;
@@ -14,8 +14,8 @@ const RETAIN: bool = cfg!(not(debug_assertions));
 
 const QOS: QoS = QoS::AtLeastOnce;
 
-static HOSTNAME: Lazy<String> =
-    Lazy::new(|| System::host_name().expect("Hostname should be acquirable"));
+static HOSTNAME: LazyLock<String> =
+    LazyLock::new(|| System::host_name().expect("Hostname should be acquirable"));
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
