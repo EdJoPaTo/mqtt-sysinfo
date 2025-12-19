@@ -98,12 +98,22 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 
         p(client, "cpu/threads", cpus.len()).await?;
 
-        let mut brands = cpus.iter().map(sysinfo::Cpu::brand).collect::<Vec<_>>();
+        let mut brands = cpus
+            .iter()
+            .map(sysinfo::Cpu::brand)
+            .map(str::trim)
+            .filter(|brand| !brand.is_empty())
+            .collect::<Vec<_>>();
         brands.sort_unstable();
         brands.dedup();
         p(client, "cpu/brand", brands.join("; ")).await?;
 
-        let mut vendors = cpus.iter().map(sysinfo::Cpu::vendor_id).collect::<Vec<_>>();
+        let mut vendors = cpus
+            .iter()
+            .map(sysinfo::Cpu::vendor_id)
+            .map(str::trim)
+            .filter(|vendor| !vendor.is_empty())
+            .collect::<Vec<_>>();
         vendors.sort_unstable();
         vendors.dedup();
         p(client, "cpu/vendor", vendors.join("; ")).await?;
