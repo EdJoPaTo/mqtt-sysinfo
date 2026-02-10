@@ -5,7 +5,6 @@ use chrono::TimeZone;
 use clap::Parser;
 use rumqttc::{AsyncClient, QoS};
 use sysinfo::{Components, CpuRefreshKind, Motherboard, Product, RefreshKind, System};
-use tokio::time::sleep;
 
 mod cli;
 mod mqtt;
@@ -37,9 +36,11 @@ async fn main() {
 
     eprintln!("Initial MQTT publish done. Starting to publish live data now...");
 
+    let mut interval = tokio::time::interval(Duration::from_mins(1));
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     loop {
+        interval.tick().await;
         on_loop(&client).await.expect("Regular update");
-        sleep(Duration::from_secs(60)).await;
     }
 }
 
