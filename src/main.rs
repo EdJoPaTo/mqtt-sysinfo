@@ -4,13 +4,14 @@ use std::time::Duration;
 use chrono::TimeZone;
 use clap::Parser;
 use rumqttc::{AsyncClient, QoS};
-use sysinfo::{Components, CpuRefreshKind, Motherboard, Product, RefreshKind, System};
+use sysinfo::{
+    Components, CpuRefreshKind, MemoryRefreshKind, Motherboard, Product, RefreshKind, System,
+};
 
 mod cli;
 mod mqtt;
 
 const RETAIN: bool = cfg!(not(debug_assertions));
-
 const QOS: QoS = QoS::AtLeastOnce;
 
 static HOSTNAME: LazyLock<String> =
@@ -141,8 +142,8 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 }
 
 macro_rules! topic {
-    ($topic_part:literal) => {{
-        const SUFFIX: &str = concat!("/", $topic_part);
+    ($first:literal $(, $rest:literal)*) => {{
+        const SUFFIX: &str = concat!("/", $first $(, "/", $rest)*);
         let mut topic = String::with_capacity(HOSTNAME.len() + SUFFIX.len());
         topic.push_str(&HOSTNAME);
         topic.push_str(SUFFIX);
@@ -168,6 +169,50 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     p(client, topic!("load/one"), load.one).await?;
     p(client, topic!("load/five"), load.five).await?;
     p(client, topic!("load/fifteen"), load.fifteen).await?;
+
+    // RAM & SWAP
+    #[expect(clippy::cast_precision_loss)]
+    {
+        const MB: f64 = (1_u32 << 20) as f64;
+
+        let sys = System::new_with_specifics(
+            RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+        );
+
+        /// publish bytes
+        macro_rules! pb {
+            ($kind:literal, $name:literal, $value:expr) => {
+                p(client, topic!($kind, "bytes", $name), $value).await?;
+                p(client, topic!($kind, "mb", $name), $value as f64 / MB).await?;
+            };
+        }
+
+        pb!("memory", "total", sys.total_memory());
+        pb!("memory", "free", sys.free_memory());
+        pb!("memory", "available", sys.available_memory());
+        pb!("memory", "used", sys.used_memory());
+
+        pb!("swap", "total", sys.total_swap());
+        pb!("swap", "free", sys.free_swap());
+        pb!("swap", "used", sys.used_swap());
+
+        /// publish percentages
+        macro_rules! pp {
+            ($kind:literal, $name:literal, $value:expr, $total:expr) => {{
+                let value = $value as f64 / $total;
+                p(client, topic!($kind, "percentage", $name), value).await?;
+            }};
+        }
+
+        let total = sys.total_memory() as f64 / 100.0;
+        pp!("memory", "free", sys.free_memory(), total);
+        pp!("memory", "available", sys.available_memory(), total);
+        pp!("memory", "used", sys.used_memory(), total);
+
+        let total = sys.total_swap() as f64 / 100.0;
+        pp!("swap", "free", sys.free_swap(), total);
+        pp!("swap", "used", sys.used_swap(), total);
+    }
 
     for comp in Components::new_with_refreshed_list().list() {
         const TOPIC_PART: &str = "/component-temperature/";
