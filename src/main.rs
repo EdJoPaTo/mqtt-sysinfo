@@ -191,21 +191,13 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     // Most devices have no or a single battery so thats fine with them?
     if let Ok(batteries) = starship_battery::Manager::new().and_then(|manager| manager.batteries())
     {
-        let batteries = batteries
-            .flatten()
-            .map(|battery| {
-                let charge = battery.state_of_charge().value;
-                let cycle_count = battery.cycle_count();
-                let health = battery.state_of_health().value;
-                let state = battery.state();
-                (charge, cycle_count, health, state)
-            })
-            .collect::<Vec<_>>();
-        for (charge, cycle_count, health, state) in batteries {
+        for battery in batteries.flatten() {
+            p(client, topic!("battery/state"), battery.state()).await?;
+            let charge = battery.state_of_charge().value;
             p(client, topic!("battery/charge"), charge).await?;
-            p(client, topic!("battery/state"), state).await?;
+            let health = battery.state_of_health().value;
             p(client, topic!("battery/health"), health).await?;
-            if let Some(cycle_count) = cycle_count {
+            if let Some(cycle_count) = battery.cycle_count() {
                 let topic = topic!("battery/cycle_count");
                 p(client, topic, cycle_count).await?;
             }
