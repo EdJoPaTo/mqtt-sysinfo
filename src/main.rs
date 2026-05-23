@@ -1,8 +1,8 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use chrono::TimeZone;
-use clap::Parser;
+use chrono::TimeZone as _;
+use clap::Parser as _;
 use rumqttc::{AsyncClient, QoS};
 use sysinfo::{
     Components, CpuRefreshKind, MemoryRefreshKind, Motherboard, Product, RefreshKind, System,
@@ -46,7 +46,7 @@ async fn main() {
 }
 
 async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
-    #[allow(clippy::min_ident_chars)]
+    #[expect(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic_part: &str,
@@ -152,7 +152,7 @@ macro_rules! topic {
 }
 
 async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
-    #[allow(clippy::min_ident_chars)]
+    #[expect(clippy::min_ident_chars)]
     async fn p<P: ToString + Send>(
         client: &AsyncClient,
         topic: String,
@@ -253,7 +253,7 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
 }
 
 fn format_uptime(uptime: u64) -> String {
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_precision_loss)]
     let seconds = uptime as f64;
     let minutes = seconds / 60.0;
     if minutes < 100.0 {
