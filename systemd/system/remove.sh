@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
+set -u
 
 sudo systemctl disable --now "mqtt-sysinfo.service"
 
