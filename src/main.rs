@@ -13,6 +13,7 @@ mod mqtt;
 
 const RETAIN: bool = cfg!(not(debug_assertions));
 const QOS: QoS = QoS::AtLeastOnce;
+const INTERVAL: Duration = Duration::from_mins(1);
 
 static HOSTNAME: LazyLock<String> =
     LazyLock::new(|| System::host_name().expect("Hostname should be acquirable"));
@@ -37,7 +38,7 @@ async fn main() {
 
     eprintln!("Initial MQTT publish done. Starting to publish live data now...");
 
-    let mut interval = tokio::time::interval(Duration::from_mins(1));
+    let mut interval = tokio::time::interval(INTERVAL);
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     loop {
         interval.tick().await;

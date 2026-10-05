@@ -4,7 +4,9 @@ use rumqttc::{AsyncClient, LastWill, MqttOptions};
 use tokio::task;
 use tokio::time::sleep;
 
-use crate::{QOS, RETAIN};
+use crate::{INTERVAL, QOS, RETAIN};
+
+const KEEP_ALIVE: Duration = Duration::from_secs(INTERVAL.as_secs() * 3 / 2);
 
 pub async fn connect(
     broker: &str,
@@ -15,6 +17,7 @@ pub async fn connect(
 ) -> AsyncClient {
     let client_id = format!("mqtt-sysinfo-{hostname}");
     let mut mqttoptions = MqttOptions::new(client_id, broker, port.get());
+    mqttoptions.set_keep_alive(KEEP_ALIVE);
 
     let t_status = format!("{hostname}/status");
     mqttoptions.set_last_will(LastWill::new(&t_status, "offline", QOS, RETAIN));
