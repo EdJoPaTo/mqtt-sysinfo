@@ -31,7 +31,7 @@ clap_mangen = "0.3"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 clap = { version = "4", features = ["deprecated", "derive", "env", "wrap_help"] }
 rumqttc = "0.25"
-starship-battery = "0.11"
+starship-battery = "0.12"
 sysinfo = { version = "0.38", default-features = false, features = ["component", "system"] }
 tokio = { version = "1", features = ["macros"] }
 
