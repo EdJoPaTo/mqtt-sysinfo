@@ -70,6 +70,18 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         Ok(())
     }
 
+    /// publish result
+    async fn pr<P: ToString + Send, E>(
+        client: &AsyncClient,
+        topic_part: &str,
+        payload: Result<P, E>,
+    ) -> Result<(), rumqttc::ClientError> {
+        if let Ok(payload) = payload {
+            p(client, topic_part, payload).await?;
+        }
+        Ok(())
+    }
+
     {
         let topic_part = concat!(env!("CARGO_PKG_NAME"), "/repository");
         p(client, topic_part, env!("CARGO_PKG_REPOSITORY")).await?;
@@ -79,24 +91,24 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
     }
 
     let boot_time = System::boot_time()
-        .try_into()
         .ok()
+        .and_then(|boot_time| boot_time.try_into().ok())
         .and_then(|secs| chrono::Local.timestamp_opt(secs, 0).single());
     if let Some(boot_time) = boot_time {
         p(client, "boot-time", boot_time.to_rfc3339()).await?;
     }
 
     p(client, "os/distribution", System::distribution_id()).await?;
-    po(client, "os/name", System::name()).await?;
-    po(client, "os/version", System::long_os_version()).await?;
-    po(client, "os/kernel", System::kernel_version()).await?;
+    pr(client, "os/name", System::name()).await?;
+    pr(client, "os/version", System::long_os_version()).await?;
+    pr(client, "os/kernel", System::kernel_version()).await?;
 
     p(client, "cpu/arch", System::cpu_arch()).await?;
-    po(client, "cpu/cores", System::physical_core_count()).await?;
+    pr(client, "cpu/cores", System::physical_core_count()).await?;
 
+    if let Ok(sys) =
+        System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()))
     {
-        let sys =
-            System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing()));
         let cpus = sys.cpus();
 
         p(client, "cpu/threads", cpus.len()).await?;
@@ -122,22 +134,22 @@ async fn on_start(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         p(client, "cpu/vendor", vendors.join("; ")).await?;
     }
 
-    if let Some(motherboard) = Motherboard::new() {
+    if let Ok(motherboard) = Motherboard::new() {
         po(client, "motherboard/name", motherboard.name()).await?;
         po(client, "motherboard/vendor", motherboard.vendor_name()).await?;
         po(client, "motherboard/version", motherboard.version()).await?;
     }
 
-    po(client, "product/name", Product::name()).await?;
-    po(client, "product/family", Product::family()).await?;
-    po(
+    pr(client, "product/name", Product::name()).await?;
+    pr(client, "product/family", Product::family()).await?;
+    pr(
         client,
         "product/stock_keeping_unit",
         Product::stock_keeping_unit(),
     )
     .await?;
-    po(client, "product/vendor", Product::vendor_name()).await?;
-    po(client, "product/version", Product::version()).await?;
+    pr(client, "product/vendor", Product::vendor_name()).await?;
+    pr(client, "product/version", Product::version()).await?;
 
     Ok(())
 }
@@ -163,22 +175,22 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         client.publish(topic, QOS, false, payload).await
     }
 
-    let uptime = format_uptime(System::uptime());
-    p(client, topic!("uptime"), uptime).await?;
+    if let Ok(uptime) = System::uptime() {
+        p(client, topic!("uptime"), format_uptime(uptime)).await?;
+    }
 
-    let load = System::load_average();
-    p(client, topic!("load/one"), load.one).await?;
-    p(client, topic!("load/five"), load.five).await?;
-    p(client, topic!("load/fifteen"), load.fifteen).await?;
+    if let Ok(load) = System::load_average() {
+        p(client, topic!("load/one"), load.one).await?;
+        p(client, topic!("load/five"), load.five).await?;
+        p(client, topic!("load/fifteen"), load.fifteen).await?;
+    }
 
     // RAM & SWAP
     #[expect(clippy::cast_precision_loss)]
-    {
+    if let Ok(sys) = System::new_with_specifics(
+        RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+    ) {
         const MB: f64 = (1_u32 << 20) as f64;
-
-        let sys = System::new_with_specifics(
-            RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
-        );
 
         /// publish bytes
         macro_rules! pb {
@@ -215,21 +227,23 @@ async fn on_loop(client: &AsyncClient) -> Result<(), rumqttc::ClientError> {
         pp!("swap", "used", sys.used_swap(), total);
     }
 
-    for comp in Components::new_with_refreshed_list().list() {
-        const TOPIC_PART: &str = "/component-temperature/";
+    if let Ok(components) = Components::new_with_refreshed_list() {
+        for comp in &components {
+            const TOPIC_PART: &str = "/component-temperature/";
 
-        let Some(temp) = comp.temperature().filter(|temp| temp.is_finite()) else {
-            continue;
-        };
-        let label = comp
-            .label()
-            .trim()
-            .replace(|char: char| !char.is_ascii_alphanumeric(), "-");
-        let mut topic = String::with_capacity(HOSTNAME.len() + TOPIC_PART.len() + label.len());
-        topic.push_str(&HOSTNAME);
-        topic.push_str(TOPIC_PART);
-        topic.push_str(&label);
-        p(client, topic, temp).await?;
+            let Some(temp) = comp.temperature().filter(|temp| temp.is_finite()) else {
+                continue;
+            };
+            let label = comp
+                .label()
+                .trim()
+                .replace(|char: char| !char.is_ascii_alphanumeric(), "-");
+            let mut topic = String::with_capacity(HOSTNAME.len() + TOPIC_PART.len() + label.len());
+            topic.push_str(&HOSTNAME);
+            topic.push_str(TOPIC_PART);
+            topic.push_str(&label);
+            p(client, topic, temp).await?;
+        }
     }
 
     // Ignore errors and override multiple batteries over the same topics
